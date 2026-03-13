@@ -1,0 +1,397 @@
+/* SEC-1 FIX (completed): Fonts are loaded via next/font/google in app/layout.tsx.
+   next/font self-hosts the font files at build time (served from the same origin),
+   which satisfies the font-src 'self' CSP directive and eliminates the Referer leak.
+   The CSS variables --font-sans and --font-serif are injected by next/font on <html>.
+   All font-family declarations below use these variables with appropriate fallbacks. */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   KAHADE DESIGN SYSTEM v3.0
+   Clean | Minimal | No Shadows | Pure White
+   ───────────────────────────────────────────────────────────────────────────── */
+
+@layer base {
+  :root {
+    /* Core Colors - Pure White System */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 4%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 4%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 4%;
+    --primary: 0 0% 4%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 4%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 4%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 4%;
+    --radius: 0.5rem;
+    
+    /* Animation */
+    --ease-spring: cubic-bezier(0.22, 0.68, 0, 1.15);
+    --ease-smooth: cubic-bezier(0.22, 0.68, 0, 1);
+    --duration-fast: 150ms;
+    --duration-base: 200ms;
+    --duration-slow: 300ms;
+    
+    /* Z-Index Scale */
+    --z-dropdown: 100;
+    --z-sticky: 200;
+    --z-fixed: 300;
+    --z-modal: 500;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
+  
+  body {
+    @apply bg-white text-foreground antialiased;
+    font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Fraunces ONLY for H1, H2, hero headlines */
+  h1, h2 {
+    font-family: var(--font-serif), Georgia, serif;
+    @apply tracking-tight;
+  }
+  
+  /* Source Sans 3 for everything else */
+  h3, h4, h5, h6, p, span, a, button, label, input, textarea {
+    font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+  
+  section[id] {
+    scroll-margin-top: 5rem;
+  }
+}
+
+@layer components {
+  /* Section System - Pure White Background */
+  .section {
+    @apply relative py-16 lg:py-24 overflow-hidden bg-white;
+  }
+  
+  .section-header {
+    @apply text-center mb-10 lg:mb-12;
+  }
+  
+  /* Typography Classes */
+  .section-title {
+    font-family: var(--font-serif), Georgia, serif;
+    @apply text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-foreground;
+  }
+  
+  .section-title-muted {
+    @apply text-muted-foreground;
+  }
+  
+  .hero-title {
+    font-family: var(--font-serif), Georgia, serif;
+    @apply text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground;
+  }
+  
+  .hero-title-light {
+    font-family: var(--font-serif), Georgia, serif;
+    @apply text-4xl sm:text-5xl lg:text-6xl font-light italic tracking-tight text-muted-foreground;
+  }
+  
+  .card-title {
+    @apply text-lg font-semibold tracking-tight text-foreground;
+  }
+  
+  .body {
+    @apply text-base leading-relaxed text-muted-foreground;
+  }
+  
+  .small {
+    @apply text-sm text-muted-foreground;
+  }
+  
+  .meta-label {
+    @apply text-xs font-semibold tracking-wide uppercase text-muted-foreground;
+  }
+  
+  /* Card System - NO SHADOW, use border */
+  .card-hover {
+    @apply transition-all duration-200 hover:-translate-y-0.5 border border-border hover:border-foreground/20;
+  }
+  
+  /* Icon Box */
+  .icon-box {
+    @apply w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 bg-muted text-muted-foreground border border-border;
+  }
+  
+  /* Container */
+  .container-base {
+    @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .container-narrow {
+    @apply max-w-3xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  /* Animation Utilities */
+  .anim-fade-up {
+    @apply opacity-0 translate-y-5;
+  }
+  
+  .anim-fade-up.in-view {
+    @apply opacity-100 translate-y-0;
+    transition: opacity 0.65s var(--ease-spring), transform 0.65s var(--ease-spring);
+  }
+  
+  /* Delay utilities */
+  .delay-100 { transition-delay: 100ms !important; }
+  .delay-200 { transition-delay: 200ms !important; }
+  .delay-300 { transition-delay: 300ms !important; }
+  .delay-400 { transition-delay: 400ms !important; }
+  .delay-500 { transition-delay: 500ms !important; }
+  /* FIX: delay-600 dipakai di HeroSection (compliance bar) & SecuritySection */
+  .delay-600 { transition-delay: 600ms !important; }
+
+  /* FIX: anim-fade-in dipakai di TestimonialsSection untuk marquee wrapper */
+  .anim-fade-in {
+    @apply opacity-0;
+  }
+
+  .anim-fade-in.in-view {
+    @apply opacity-100;
+    transition: opacity 0.65s var(--ease-smooth);
+  }
+  
+  /* FIX: Marquee pause on hover — WCAG 2.2.2 (Pause, Stop, Hide).
+     Moving animations that play for >5 seconds must be pausable by the user.
+     The marquee wrapper has aria-hidden="true", but sighted users still benefit
+     from a hover pause to read individual testimonial cards. */
+  .marquee-container:hover .animate-marquee,
+  .marquee-container:hover .animate-marquee-reverse,
+  .marquee-container:hover .animate-marquee-fast,
+  .marquee-container:hover .animate-marquee-reverse-fast {
+    animation-play-state: paused;
+  }
+
+  /* Note: .line-clamp-2 and .line-clamp-3 are Tailwind built-in utilities (v3.3+).
+     Use the utility classes directly (line-clamp-2, line-clamp-3) instead of
+     these custom component definitions. Kept for backward compat if needed. */
+}
+
+@layer utilities {
+  /* Font utilities */
+  .font-display {
+    font-family: var(--font-serif), Georgia, serif;
+  }
+  
+  .font-sans {
+    font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* Focus-visible styles for interactive elements */
+@layer base {
+  a:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  input:focus-visible,
+  [role="button"]:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 0.25rem;
+  }
+}
+
+/* Inline text links — underline for accessibility */
+@layer base {
+  main a:not([class]),
+  .article-content a,
+  p a:not([class]) {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+}
+
+/* Mobile table scroll indicator */
+@layer components {
+  .table-scroll-container {
+    position: relative;
+  }
+  .table-scroll-container::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 24px;
+    pointer-events: none;
+    background: linear-gradient(to left, hsl(var(--background)), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .table-scroll-container.has-overflow::after {
+    opacity: 1;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* Fix: html scroll-behavior smooth tidak tercover oleh selector * di atas */
+  html {
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Article / Prose content styles (replaces @tailwindcss/typography) */
+@layer components {
+  .article-content {
+    @apply max-w-none;
+  }
+  .article-content h2 {
+    @apply text-xl font-semibold text-foreground mt-8 mb-4;
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  }
+  .article-content h3 {
+    @apply text-lg font-medium text-foreground mt-6 mb-3;
+  }
+  .article-content p {
+    @apply text-muted-foreground leading-relaxed mb-4;
+  }
+  .article-content ul, .article-content ol {
+    @apply text-muted-foreground leading-relaxed mb-4 ml-6;
+  }
+  .article-content ul {
+    @apply list-disc;
+  }
+  .article-content ol {
+    @apply list-decimal;
+  }
+  .article-content li {
+    @apply mb-1.5;
+  }
+  .article-content a {
+    @apply text-primary underline hover:text-primary/80 transition-colors;
+  }
+  .article-content section {
+    @apply mb-8;
+  }
+}
+
+/* Dark mode variables — currently mirrors light mode (project is light-only)
+   Diperlukan karena darkMode: ['class'] di tailwind.config.js dan next-themes
+   di package.json. Jika ingin menambah dark mode di masa depan, ubah nilai ini. */
+@layer base {
+  .dark {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 4%;
+    --secondary: 0 0% 14%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 64%;
+    --accent: 0 0% 14%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 0 0% 98%;
+  }
+}
+
+/* Sidebar CSS custom properties — dibutuhkan sidebar.tsx (shadcn component) */
+@layer base {
+  :root {
+    --sidebar: 0 0% 98%;
+    --sidebar-foreground: 0 0% 4%;
+    --sidebar-primary: 0 0% 4%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 94%;
+    --sidebar-accent-foreground: 0 0% 4%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 0 0% 4%;
+    --sidebar-width: 16rem;
+    --sidebar-width-icon: 3rem;
+  }
+  .dark {
+    --sidebar: 0 0% 6%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 0 0% 98%;
+    --sidebar-primary-foreground: 0 0% 4%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 0 0% 98%;
+  }
+}
+
+/* ─── Modal animation ─────────────────────────────────────── */
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ─── Spin slow for hero illustration ───────────────────────── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin 35s linear infinite;
+}
+
+/* ─── Step card fade animation (HowItWorks) ─── */
+@keyframes stepFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Focus-visible: visible keyboard focus ring (#73, #193) ───────────── */
+/* Replace outline: none with visible focus indicator for keyboard users */
+:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Ensure interactive elements never hide focus ring from keyboard nav */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* L-10 FIX: Removed duplicate @media (prefers-reduced-motion: reduce) block here.
+   The authoritative block with html { scroll-behavior: auto } fix is kept above (~line 254). */

@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@/*": ["./*"],
+      "@/components/ui/*": ["./shared/components/ui/*"],
+      "@/components/shared": ["./shared/components/shared/index"],
+      "@/components/shared/*": ["./shared/components/shared/*"],
+      "@/lib/utils": ["./shared/lib/utils"],
+      "@/lib/currency": ["./shared/lib/currency"],
+      "@/hooks/use-mobile": ["./shared/hooks/use-mobile"]
+    },
+    "target": "ES2017"
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "shared/components/**/*.tsx",
+    "shared/lib/**/*.ts",
+    "shared/hooks/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
+}
