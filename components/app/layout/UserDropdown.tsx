@@ -14,33 +14,38 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/lib/stores/auth.store"
+import { useLogout } from "@/lib/hooks/use-auth"
 import { ROUTES, KYC_STATUS_LABELS, MEMBERSHIP_RANK_LABELS } from "@/lib/constants"
 import { StatusBadge } from "@/components/shared/StatusBadge"
 
 export function UserDropdown() {
   const router = useRouter()
   const user = useAuthStore((s) => s.user)
-  const logout = useAuthStore((s) => s.logout)
+  // #1 FIX: Gunakan useLogout() yang memanggil POST /auth/logout ke server
+  // agar refresh token di-revoke, bukan hanya clear local state.
+  const logoutMutation = useLogout()
 
   if (!user) return null
 
+  // #068 FIX: filter(Boolean) guards against empty tokens from multiple spaces;
+  // optional chaining on n[0] prevents crash on edge-case fullNames
+  // Guard against fullName being undefined/null (e.g. freshly registered user)
   const initials = (user.fullName ?? "")
-  .split(" ")
-  .filter(Boolean)
-  .map((n) => n[0] ?? "")
-  .join("")
-  .toUpperCase()
-  .slice(0, 2) || "?"
+    .split(" ")
+    .filter(Boolean)
+    .map((n) => n[0] ?? "")
+    .join("")
+    .toUpperCase()
+    .slice(0, 2) || "?"
 
   const handleLogout = () => {
-    logout()
-    router.push(ROUTES.LOGIN)
+    logoutMutation.mutate()
   }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative rounded-full">
+        <Button variant="ghost" size="icon" className="relative rounded-full" data-testid="button-user-dropdown-trigger">
           <Avatar className="size-8">
             {user.avatarUrl && <AvatarImage src={user.avatarUrl} alt={user.fullName} />}
             <AvatarFallback className="text-xs font-semibold">
@@ -71,29 +76,35 @@ export function UserDropdown() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => router.push(ROUTES.PROFILE)}>
+          <DropdownMenuItem onClick={() => router.push(ROUTES.PROFILE)} data-testid="menu-item-profile">
             <User className="size-4" />
             Profil
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push(ROUTES.PROFILE_SECURITY)}>
+          <DropdownMenuItem onClick={() => router.push(ROUTES.PROFILE_SECURITY)} data-testid="menu-item-security">
             <Shield className="size-4" />
             Keamanan
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push(ROUTES.PROFILE_BANK)}>
+          <DropdownMenuItem onClick={() => router.push(ROUTES.PROFILE_BANK)} data-testid="menu-item-bank">
             <CreditCard className="size-4" />
             Rekening Bank
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push(ROUTES.SETTINGS)}>
+          <DropdownMenuItem onClick={() => router.push(ROUTES.SETTINGS)} data-testid="menu-item-settings">
             <GearSix className="size-4" />
             Pengaturan
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onClick={handleLogout}>
+        <DropdownMenuItem
+          variant="destructive"
+          onClick={handleLogout}
+          disabled={logoutMutation.isPending}
+          data-testid="menu-item-logout"
+        >
           <SignOut className="size-4" />
-          Keluar
+          {logoutMutation.isPending ? "Keluar..." : "Keluar"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )
             }
+              
