@@ -6,35 +6,11 @@ import { PullToRefreshIndicator } from "./PullToRefreshIndicator"
 
 interface RefreshableLayoutProps {
   children: React.ReactNode
-  /**
-   * Override fungsi refresh. Default: invalidate semua query aktif.
-   * Berguna kalau halaman tertentu cukup invalidate query spesifik saja.
-   */
   onRefresh?: () => Promise<void>
-  /** Jarak tarik sebelum trigger refresh (px). Default: 80 */
   threshold?: number
   className?: string
 }
 
-/**
- * Wrapper layout yang menambahkan pull-to-refresh pada scrollable area.
- *
- * Gunakan di layout (app) atau per-halaman:
- *
- * ```tsx
- * // app/(app)/layout.tsx
- * export default function AppLayout({ children }) {
- *   return <RefreshableLayout>{children}</RefreshableLayout>
- * }
- * ```
- *
- * Atau di halaman spesifik dengan refresh kustom:
- * ```tsx
- * <RefreshableLayout onRefresh={async () => { await refetchOrders() }}>
- *   <TransaksiList />
- * </RefreshableLayout>
- * ```
- */
 export function RefreshableLayout({
   children,
   onRefresh,
@@ -44,7 +20,6 @@ export function RefreshableLayout({
   const queryClient = useQueryClient()
 
   const defaultRefresh = async () => {
-    // Invalidate semua query yang sedang aktif — TanStack Query refetch otomatis
     await queryClient.invalidateQueries()
   }
 
@@ -54,14 +29,13 @@ export function RefreshableLayout({
   })
 
   return (
-    <div className="relative overflow-hidden h-full">
-      {/* Indicator tersembunyi di atas, di-animate oleh hook */}
+    // FIX: flex flex-col supaya inner div bisa pakai flex-1 untuk mengisi sisa tinggi
+    // Sebelumnya block div biasa — flex-1 dari className tidak punya efek → tidak bisa scroll
+    <div className="relative overflow-hidden h-full flex flex-col">
       <PullToRefreshIndicator ref={indicatorRef} />
 
-      {/* Area scroll utama */}
       <div
-        className={className ?? "h-full overflow-y-auto overscroll-y-contain"}
-        // Mencegah browser native pull-to-refresh (CSS tidak cukup di semua browser)
+        className={className ?? "flex-1 overflow-y-auto overscroll-y-contain"}
         style={{ overscrollBehaviorY: "contain" }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
