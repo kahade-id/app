@@ -60,12 +60,18 @@
   html {
     scroll-behavior: smooth;
     scroll-padding-top: 5rem;
+    /* Phase 2: Disable browser native pull-to-refresh.
+       Aplikasi pakai custom pull-to-refresh via usePullToRefresh hook.
+       overscroll-behavior-y: contain mencegah Chrome/Safari men-trigger
+       native refresh saat user menarik ke bawah dari atas halaman. */
+    overscroll-behavior-y: contain;
   }
   
   body {
     @apply bg-white text-foreground antialiased;
     font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
+    overscroll-behavior-y: contain;
   }
   
   /* Fraunces ONLY for H1, H2, hero headlines */
