@@ -43,15 +43,11 @@ export default function ErrorPage({ error, reset }: ErrorBoundaryProps) {
           Maaf, terjadi kesalahan saat memproses permintaan Anda. Silakan coba
           lagi atau hubungi tim support kami.
         </p>
-        {error.digest && (
-          <p className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2 mb-6 font-mono break-all">
-            Error ID: {error.digest}
-          </p>
-        )}
-        {process.env.NODE_ENV === "development" && error.message && (
-          <p className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2 mb-6 font-mono break-all">
-            {error.message}
-          </p>
+        {(error.digest || error.message) && (
+          <div className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2 mb-6 font-mono break-all space-y-1 text-left">
+            {error.digest && <p><span className="font-semibold">Error ID:</span> {error.digest}</p>}
+            {error.message && <p><span className="font-semibold">Detail:</span> {error.message}</p>}
+          </div>
         )}
         <div className="flex flex-wrap justify-center gap-3 mt-6">
           <button
