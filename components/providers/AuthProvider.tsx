@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               (p) => window.location.pathname === p || window.location.pathname.startsWith(p + '/')
             )
             if (isOnAuthPage) {
-              window.location.href = '/'
+              window.location.href = '/beranda' // Phase 2 FIX: langsung ke dashboard, bukan splash
               return
             }
           }
