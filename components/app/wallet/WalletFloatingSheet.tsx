@@ -4,85 +4,70 @@ import { useRouter } from "next/navigation"
 import {
   ArrowCircleUp,
   ArrowCircleDown,
-  ClockCounterClockwise,
-  LockKey,
-  ArrowUpRight,
-  type Icon,
+  Clock,
+  DotsThreeHorizontal,
 } from "@phosphor-icons/react"
 import { motion, AnimatePresence } from "framer-motion"
 import { formatIDR } from "@/lib/currency"
 import { useWallet } from "@/lib/hooks/use-wallet"
 import { ROUTES } from "@/lib/constants"
 
-// ── Action grid config ──────────────────────────────────────
-interface WalletAction {
-  label:   string
-  href:    string
-  icon:    Icon
-  iconBg:  string  // background fill of the icon tile
-  iconColor: string
-  testId:  string
-}
+// ─── Geometry (must stay in sync with AppBottomNav constants) ─
+// Exported so AppBottomNav can import without duplication
+export const PILL_H  = 58   // ITEM_H(48) + PAD(5)*2
+export const PAD_X   = 16   // horizontal screen padding
+export const PB      = 16   // bottom padding
 
-const ACTIONS: WalletAction[] = [
+// ─── 4 wallet actions ─────────────────────────────────────────
+const ACTIONS = [
   {
     label:     "Top Up",
     href:      ROUTES.WALLET_TOPUP,
     icon:      ArrowCircleUp,
-    iconBg:    "#e8f8f1",
-    iconColor: "#16a34a",
-    testId:    "wallet-sheet-topup",
+    bg:        "#e6f7ee",
+    color:     "#16a34a",
+    testId:    "ws-topup",
   },
   {
     label:     "Tarik Dana",
     href:      ROUTES.WALLET_WITHDRAW,
     icon:      ArrowCircleDown,
-    iconBg:    "#fff3e8",
-    iconColor: "#ea580c",
-    testId:    "wallet-sheet-withdraw",
+    bg:        "#fff2e8",
+    color:     "#ea580c",
+    testId:    "ws-withdraw",
   },
   {
     label:     "Riwayat",
     href:      ROUTES.WALLET_HISTORY,
-    icon:      ClockCounterClockwise,
-    iconBg:    "#eaf1ff",
-    iconColor: "#3b82f6",
-    testId:    "wallet-sheet-history",
-  },
-  {
-    label:     "PIN Wallet",
-    href:      ROUTES.WALLET,
-    icon:      LockKey,
-    iconBg:    "#f3eeff",
-    iconColor: "#7c3aed",
-    testId:    "wallet-sheet-pin",
+    icon:      Clock,
+    bg:        "#e8f0fe",
+    color:     "#3b5bdb",
+    testId:    "ws-history",
   },
   {
     label:     "Detail",
     href:      ROUTES.WALLET,
-    icon:      ArrowUpRight,
-    iconBg:    "#f4f4f4",
-    iconColor: "#525252",
-    testId:    "wallet-sheet-detail",
+    icon:      DotsThreeHorizontal,
+    bg:        "#f2f2f2",
+    color:     "#525252",
+    testId:    "ws-detail",
   },
 ]
-
-// ── Spring presets ──────────────────────────────────────────
-const SHEET_SPRING = { type: "spring" as const, stiffness: 440, damping: 38, mass: 0.8 }
-const ITEM_SPRING  = { type: "spring" as const, stiffness: 500, damping: 32 }
 
 interface WalletFloatingSheetProps {
   open:    boolean
   onClose: () => void
-  /** Offset in px above which the sheet sits (= pill height + gap) */
-  bottomOffset: number
 }
 
-export function WalletFloatingSheet({ open, onClose, bottomOffset }: WalletFloatingSheetProps) {
-  const router  = useRouter()
+export function WalletFloatingSheet({ open, onClose }: WalletFloatingSheetProps) {
+  const router         = useRouter()
   const { data: wallet } = useWallet()
 
-  function navigate(href: string) {
+  // Total distance from bottom screen edge to top of pill
+  // = env(safe-area-inset-bottom) handled by parent, so here we just use fixed offset
+  const BOTTOM_POS = PB + PILL_H + 8  // 8px gap between sheet and pill
+
+  function go(href: string) {
     onClose()
     router.push(href)
   }
@@ -91,138 +76,158 @@ export function WalletFloatingSheet({ open, onClose, bottomOffset }: WalletFloat
     <AnimatePresence>
       {open && (
         <>
-          {/* ── Tap-outside backdrop ───────────────────────── */}
+          {/* ── Scrim ──────────────────────────────────────────── */}
           <motion.div
-            key="wallet-backdrop"
+            key="ws-scrim"
+            className="fixed inset-0 z-40"
+            style={{ background: "rgba(0,0,0,0.22)" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
-            className="fixed inset-0 z-40"
-            style={{ background: "rgba(0,0,0,0.18)" }}
+            exit={{    opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             onClick={onClose}
             aria-hidden="true"
           />
 
-          {/* ── Floating sheet ────────────────────────────── */}
+          {/* ── Sheet ──────────────────────────────────────────── */}
           <motion.div
-            key="wallet-sheet"
+            key="ws-sheet"
             role="dialog"
             aria-modal="true"
             aria-label="Menu Dompet"
-            className="fixed left-4 right-4 z-50"
-            style={{ bottom: bottomOffset }}
-            initial={{ opacity: 0, y: 28, scale: 0.97 }}
+            className="fixed z-50"
+            style={{
+              left:   PAD_X,
+              right:  PAD_X,
+              bottom: BOTTOM_POS,
+            }}
+            initial={{ opacity: 0, y: 20, scale: 0.96 }}
             animate={{ opacity: 1, y: 0,  scale: 1    }}
-            exit={{    opacity: 0, y: 20, scale: 0.97 }}
-            transition={SHEET_SPRING}
+            exit={{    opacity: 0, y: 14, scale: 0.97 }}
+            transition={{
+              type:      "spring",
+              stiffness: 480,
+              damping:   38,
+              mass:      0.75,
+            }}
           >
             <div
-              className="rounded-3xl overflow-hidden"
               style={{
-                background: "rgba(255,255,255,0.97)",
-                backdropFilter: "blur(8px)",
-                WebkitBackdropFilter: "blur(8px)",
+                borderRadius: 28,
+                overflow: "hidden",
+                // Slightly more opaque than navbar pill so content is readable
+                background:           "rgba(255,255,255,0.96)",
+                backdropFilter:       "blur(24px)",
+                WebkitBackdropFilter: "blur(24px)",
+                // Top shadow strong, bottom subtle — creates "floating above navbar" feel
                 boxShadow:
-                  "0 -2px 0 rgba(0,0,0,0.04)," +
-                  "0 16px 48px rgba(0,0,0,0.12)," +
-                  "0 4px 12px rgba(0,0,0,0.06)",
+                  "0 -1px 0 rgba(255,255,255,0.8) inset," +
+                  "0 20px 56px rgba(0,0,0,0.13)," +
+                  "0 4px 16px rgba(0,0,0,0.07)," +
+                  "0 1px 0 rgba(0,0,0,0.04)",
+                border: "1px solid rgba(255,255,255,0.7)",
               }}
             >
-              {/* Drag handle */}
-              <div className="flex justify-center pt-3 pb-1">
+              {/* Drag pill indicator */}
+              <div className="flex justify-center" style={{ paddingTop: 10, paddingBottom: 4 }}>
                 <div
-                  className="rounded-full"
-                  style={{ width: 36, height: 4, background: "#e0e0e0" }}
+                  style={{
+                    width: 32, height: 4,
+                    borderRadius: 999,
+                    background: "#e0e0e0",
+                  }}
                 />
               </div>
 
-              <div style={{ padding: "12px 20px 20px" }}>
-                {/* ── Balance section ───────────────────── */}
+              <div style={{ padding: "10px 18px 20px" }}>
+
+                {/* ── Balance ──────────────────────────────── */}
                 <div
-                  className="rounded-2xl mb-4"
                   style={{
-                    padding: "14px 16px",
-                    background: "#f7f7f7",
+                    background:   "#f6f6f6",
+                    borderRadius: 18,
+                    padding:      "14px 16px",
+                    marginBottom: 16,
                   }}
                 >
-                  <p
-                    className="leading-none mb-1"
-                    style={{ fontSize: 11, fontWeight: 500, color: "#9e9e9e", letterSpacing: "0.02em" }}
-                  >
-                    SALDO TERSEDIA
+                  <p style={{
+                    fontSize: 10.5, fontWeight: 600,
+                    color: "#9e9e9e", letterSpacing: "0.06em",
+                    textTransform: "uppercase", marginBottom: 6,
+                  }}>
+                    Saldo Tersedia
                   </p>
-                  <p
-                    className="leading-none font-bold"
-                    style={{ fontSize: 24, color: "#0f0f0f", letterSpacing: "-0.03em" }}
-                  >
+                  <p style={{
+                    fontSize: 26, fontWeight: 700,
+                    color: "#0f0f0f", letterSpacing: "-0.03em",
+                    lineHeight: 1,
+                  }}>
                     {wallet ? formatIDR(wallet.availableBalance) : "—"}
                   </p>
                   {wallet && (
-                    <p
-                      className="leading-none mt-2"
-                      style={{ fontSize: 12, color: "#757575" }}
-                    >
+                    <p style={{
+                      fontSize: 12, color: "#757575",
+                      marginTop: 6, lineHeight: 1,
+                    }}>
                       Dana Escrow: {formatIDR(wallet.escrowBalance)}
                     </p>
                   )}
                 </div>
 
-                {/* ── Action grid ───────────────────────── */}
+                {/* ── 4 Actions ────────────────────────────── */}
                 <div
-                  className="grid"
                   style={{
-                    gridTemplateColumns: "repeat(5, 1fr)",
-                    gap: 8,
+                    display: "grid",
+                    gridTemplateColumns: "repeat(4, 1fr)",
+                    gap: 10,
                   }}
                 >
                   {ACTIONS.map((action, i) => {
-                    const ActionIcon = action.icon
+                    const Icon = action.icon
                     return (
                       <motion.button
                         key={action.testId}
                         data-testid={action.testId}
-                        onClick={() => navigate(action.href)}
+                        onClick={() => go(action.href)}
                         className="flex flex-col items-center"
-                        style={{ gap: 6 }}
-                        whileTap={{ scale: 0.86 }}
-                        initial={{ opacity: 0, y: 10 }}
+                        style={{ gap: 7, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                        whileTap={{ scale: 0.84 }}
+                        initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ ...ITEM_SPRING, delay: i * 0.035 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 500,
+                          damping: 32,
+                          delay: 0.04 + i * 0.04,
+                        }}
                       >
                         {/* Icon tile */}
-                        <div
-                          className="flex items-center justify-center rounded-2xl"
-                          style={{
-                            width: 52,
-                            height: 52,
-                            background: action.iconBg,
-                            flexShrink: 0,
-                          }}
-                        >
-                          <ActionIcon
-                            size={24}
-                            weight="fill"
-                            style={{ color: action.iconColor }}
-                          />
+                        <div style={{
+                          width: "100%",
+                          aspectRatio: "1 / 1",
+                          background:   action.bg,
+                          borderRadius: 20,
+                          display:      "flex",
+                          alignItems:   "center",
+                          justifyContent: "center",
+                        }}>
+                          <Icon size={26} weight="fill" style={{ color: action.color }} />
                         </div>
                         {/* Label */}
-                        <span
-                          className="leading-tight text-center"
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 500,
-                            color: "#525252",
-                            maxWidth: 56,
-                            wordBreak: "break-word",
-                          }}
-                        >
+                        <span style={{
+                          fontSize:   11.5,
+                          fontWeight: 500,
+                          color:      "#525252",
+                          lineHeight: 1.2,
+                          textAlign:  "center",
+                        }}>
                           {action.label}
                         </span>
                       </motion.button>
                     )
                   })}
                 </div>
+
               </div>
             </div>
           </motion.div>
