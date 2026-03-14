@@ -1,12 +1,10 @@
 "use client"
 
-import Link from "next/link"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { SpinnerGap, ArrowLeft } from "@phosphor-icons/react"
+import { SpinnerGap } from "@phosphor-icons/react"
 import { setUsernameSchema, type SetUsernameInput } from "@/lib/validations/auth.schema"
-import { useSetUsername } from "@/lib/hooks/use-auth"
-import { ROUTES } from "@/lib/constants"
+import { useSetUsername, useLogout } from "@/lib/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -21,6 +19,10 @@ import {
 
 export function SetUsernameForm() {
   const setUsernameMutation = useSetUsername()
+  // AUTH-06 FIX: User is already authenticated at this step (they just logged in).
+  // A "Back to Login" link → /login → middleware detects valid token → redirects to app.
+  // The correct escape hatch is to logout, which clears the session properly.
+  const logoutMutation = useLogout()
 
   const form = useForm<SetUsernameInput>({
     resolver: zodResolver(setUsernameSchema),
@@ -63,14 +65,22 @@ export function SetUsernameForm() {
           Simpan Username
         </Button>
 
+        {/* AUTH-06 FIX: Replace "Kembali ke Login" link with a logout button.
+            User is already authenticated — navigating to /login triggers a middleware
+            redirect back to the app, creating a confusing redirect loop.
+            The correct action is to logout, clearing the session entirely. */}
         <div className="text-center">
-          <Link
-            href={ROUTES.LOGIN}
-            className="text-sm text-muted-foreground hover:underline inline-flex items-center gap-1"
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground"
+            onClick={() => logoutMutation.mutate()}
+            disabled={logoutMutation.isPending}
+            data-testid="button-cancel-username"
           >
-            <ArrowLeft className="size-3" />
-            Kembali ke Login
-          </Link>
+            {logoutMutation.isPending ? "Keluar..." : "Batalkan & Keluar"}
+          </Button>
         </div>
       </form>
     </Form>
