@@ -73,13 +73,13 @@ export function AvatarUpload({ avatarUrl, fullName }: AvatarUploadProps) {
   }
 
   // #068 FIX: Safe initials — filter empty tokens and guard against missing char
-  const initials = fullName
+  const initials = (fullName ?? "")
     .split(" ")
     .filter(Boolean)
-    .map((n) => n[0])
+    .map((n) => n[0] ?? "")
     .join("")
     .slice(0, 2)
-    .toUpperCase()
+    .toUpperCase() || "?"
 
   return (
     <div className="flex items-center gap-4">
