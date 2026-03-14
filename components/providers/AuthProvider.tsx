@@ -77,6 +77,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const newToken = await refreshAccessToken()
           state.setAccessToken(newToken)
           state.refreshActivity()
+          // BOOTSTRAP-REDIRECT FIX: Session has been silently restored via the
+          // HttpOnly refresh cookie (hard refresh / tab restore scenario).
+          // If the user is on an auth page (/login, /register, etc.), redirect
+          // them to the dashboard — they're already authenticated.
+          // Without this, the user can see the login form while authenticated,
+          // and the next navigation will be intercepted by middleware → redirect
+          // to app, making it look like "login always redirects even on failure".
+          if (typeof window !== 'undefined') {
+            const authPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/set-username', '/2fa-verify']
+            const isOnAuthPage = authPaths.some(
+              (p) => window.location.pathname === p || window.location.pathname.startsWith(p + '/')
+            )
+            if (isOnAuthPage) {
+              window.location.href = '/'
+              return
+            }
+          }
           // Token restored — fall through to setLoading(false) below.
         } catch {
           // Refresh cookie expired or invalid → must re-authenticate.
