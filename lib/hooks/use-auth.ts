@@ -47,15 +47,6 @@ export function useLogin() {
   return useMutation({
     mutationFn: authService.login,
     onSuccess: ({ data: res }) => {
-      // LOGIN-SUCCESS-CHECK FIX: Always verify res.success before processing.
-      // If the backend returns HTTP 200 with { success: false, data: {...} }
-      // (e.g. banned account, unverified email), we must NOT proceed to login()
-      // and redirect — the data field being non-null is not enough.
-      if (!res.success) {
-        toast.error(res.message || 'Email atau password salah. Silakan coba lagi.')
-        return
-      }
-
       const result = res.data
       if (!result) {
         toast.error('Respons server tidak valid. Silakan coba lagi.')
@@ -105,6 +96,12 @@ export function useVerify2FALogin() {
   return useMutation({
     mutationFn: authService.verify2FALogin,
     onSuccess: ({ data: res }) => {
+      // AUTH-01 FIX: Check res.success before proceeding. Server can return HTTP 200
+      // with success:false for expired temp tokens, blocked devices, etc.
+      if (!res.success) {
+        toast.error(res.message || 'Verifikasi 2FA gagal. Silakan coba lagi.')
+        return
+      }
       const result = res.data
       if (!result) {
         toast.error('Respons server tidak valid. Silakan coba lagi.')
@@ -133,6 +130,12 @@ export function useSetUsername() {
   return useMutation({
     mutationFn: authService.setUsername,
     onSuccess: ({ data: res }) => {
+      // AUTH-02 FIX: Check res.success — server can return HTTP 200 with success:false
+      // for taken usernames, profanity filter hits, or validation errors.
+      if (!res.success) {
+        toast.error(res.message || 'Gagal mengatur username. Silakan coba lagi.')
+        return
+      }
       if (res.data?.user) {
         updateUser(res.data.user)
       }
@@ -189,10 +192,16 @@ export function useResendVerification() {
 }
 
 export function useCorrectEmail() {
+  const router = useRouter()
+
   return useMutation({
     mutationFn: authService.correctEmail,
-    onSuccess: () => {
-      toast.success('Email berhasil dikoreksi. Cek email baru Anda.')
+    onSuccess: (_, variables) => {
+      // AUTH-03 FIX: Redirect to /verify-email after correcting email.
+      // Server sends a new OTP to the corrected email — user must verify it.
+      // Without this redirect, user sees only a toast with no indication of next step.
+      toast.success('Email berhasil dikoreksi. Silakan verifikasi email baru Anda.')
+      router.push(`${ROUTES.VERIFY_EMAIL}?email=${encodeURIComponent(variables.newEmail)}`)
     },
     onError: (error) => {
       toast.error(getApiErrorMessage(error, 'Gagal mengoreksi email'))
