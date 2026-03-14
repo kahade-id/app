@@ -23,7 +23,7 @@ import { NAV_ITEMS } from "@/lib/nav-config"
 
 // ── Main nav pages: hamburger + logo + bell layout ───────────
 const MAIN_NAV_ROUTES = [
-  ROUTES.DASHBOARD,    // "/"
+  ROUTES.DASHBOARD,    // "/beranda"
   ROUTES.TRANSACTIONS, // "/transaksi"
   ROUTES.WALLET,       // "/wallet"
   ROUTES.PROFILE,      // "/profil"
@@ -32,6 +32,9 @@ const MAIN_NAV_ROUTES = [
 // ── Page title map: route prefix → label for sub/detail pages ─
 // Order matters — more specific prefixes should come first.
 const PAGE_TITLE_MAP: Array<{ prefix: string; exact?: boolean; label: string }> = [
+  // Dashboard baru
+  { prefix: ROUTES.DASHBOARD,        exact: true, label: "Dashboard" },
+
   // Auth (shouldn't appear in AppShell, but safe fallback)
   { prefix: ROUTES.LOGIN,           exact: true, label: "Masuk" },
   { prefix: ROUTES.REGISTER,        exact: true, label: "Daftar" },
@@ -83,10 +86,9 @@ const PAGE_TITLE_MAP: Array<{ prefix: string; exact?: boolean; label: string }> 
 ]
 
 function useTopbarMode(pathname: string): "main" | "sub" {
+  // Phase 2 FIX: gunakan perbandingan langsung, bukan hardcode "/"
   const isMain = MAIN_NAV_ROUTES.some((route) =>
-    route === "/"
-      ? pathname === "/"
-      : pathname === route || pathname.startsWith(route + "/")
+    pathname === route || pathname.startsWith(route + "/")
   )
   return isMain ? "main" : "sub"
 }
@@ -223,9 +225,7 @@ export function AppTopbar() {
             <nav aria-label="Menu navigasi" className="flex flex-col gap-0.5 px-3">
               {NAV_ITEMS.map((item) => {
                 const isActive =
-                  item.href === "/"
-                    ? pathname === "/"
-                    : pathname === item.href || pathname.startsWith(item.href + "/")
+                  pathname === item.href || pathname.startsWith(item.href + "/")
                 const Icon = item.icon
                 return (
                   <Link
