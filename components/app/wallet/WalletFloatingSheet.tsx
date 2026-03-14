@@ -5,7 +5,7 @@ import {
   ArrowCircleUp,
   ArrowCircleDown,
   Clock,
-  DotsThreeHorizontal,
+  DotsThree,
 } from "@phosphor-icons/react"
 import { motion, AnimatePresence } from "framer-motion"
 import { formatIDR } from "@/lib/currency"
