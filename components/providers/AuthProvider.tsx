@@ -5,6 +5,7 @@ import type { ReactNode } from "react"
 import { toast } from "sonner"
 import { useAuthStore } from "@/lib/stores/auth.store"
 import { getQueryClient } from "@/components/providers/QueryProvider"
+import { refreshAccessToken } from "@/lib/api"
 
 // SEC-3 FIX: Made atob() call base64url-safe.
 // JWTs use base64url encoding (- instead of +, _ instead of /, no padding).
@@ -29,51 +30,84 @@ function isTokenExpired(token: string): boolean {
   }
 }
 
+function forceLogout(message: string) {
+  toast.info(message)
+  getQueryClient()?.clear()
+  useAuthStore.getState().logout()
+  window.location.href = '/login?session=expired'
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const isLoading = useAuthStore((s) => s.isLoading)
   const setLoading = useAuthStore((s) => s.setLoading)
 
   useEffect(() => {
-    const { accessToken, isAuthenticated, logout, isSessionExpired, refreshActivity } = useAuthStore.getState()
+    // ── Bootstrap: runs once on mount ────────────────────────────────────
+    // Handles all possible auth states in the correct priority order.
+    async function bootstrap() {
+      const state = useAuthStore.getState()
 
-    if (isAuthenticated && accessToken && isTokenExpired(accessToken)) {
-      // UX-012 FIX: Show toast so user understands why they're being redirected to login
-      toast.info("Sesi Anda telah berakhir. Silakan login kembali.")
-      getQueryClient()?.clear()
-      logout()
-      // Redirect to login so user must re-authenticate; prevents broken state where
-      // local auth is cleared but server-side refresh cookie is still valid.
-      window.location.href = '/login?session=expired'
-      return
+      // ── 1. Has in-memory token but it's already expired ──────────────
+      // This catches the edge case where the user kept the tab open across
+      // a device sleep/suspend long enough for the JWT to expire.
+      if (state.isAuthenticated && state.accessToken && isTokenExpired(state.accessToken)) {
+        forceLogout("Sesi Anda telah berakhir. Silakan login kembali.")
+        return
+      }
+
+      // ── 2. 8-hour activity-based session timeout ──────────────────────
+      if (state.isAuthenticated && state.isSessionExpired()) {
+        forceLogout("Sesi tidak aktif selama 8 jam. Silakan login kembali.")
+        return
+      }
+
+      // ── 3. Hard-refresh / tab restore: authenticated but no access token ─
+      // accessToken is NEVER persisted to localStorage (C-01 security fix:
+      // no XSS surface). After a hard refresh the Zustand store rehydrates
+      // with isAuthenticated=true but accessToken=null.
+      //
+      // onRehydrateStorage (auth.store.ts) intentionally keeps isLoading=true
+      // in this case so no React Query hooks fire before we restore the token.
+      //
+      // We call /auth/refresh directly (bare axios, not the api instance) to
+      // exchange the HttpOnly refresh cookie for a new access token. If the
+      // cookie is expired/missing the user is sent to login.
+      if (state.isAuthenticated && !state.accessToken) {
+        try {
+          const newToken = await refreshAccessToken()
+          state.setAccessToken(newToken)
+          state.refreshActivity()
+          // Token restored — fall through to setLoading(false) below.
+        } catch {
+          // Refresh cookie expired or invalid → must re-authenticate.
+          // Do NOT show a toast here: the user didn't explicitly "do" anything,
+          // so a silent redirect is less jarring than a surprise toast.
+          getQueryClient()?.clear()
+          await state.logout()
+          window.location.href = '/login?session=expired'
+          return
+        }
+      }
+
+      // ── All checks passed — allow queries to fire ─────────────────────
+      setLoading(false)
     }
 
-    // #26 FIX: Periksa session timeout 8 jam (activity-based) bukan hanya JWT expiry
-    if (isAuthenticated && isSessionExpired()) {
-      toast.info("Sesi tidak aktif selama 8 jam. Silakan login kembali.")
-      getQueryClient()?.clear()
-      logout()
-      window.location.href = '/login?session=expired'
-      return
-    }
+    bootstrap()
 
-    setLoading(false)
-
-    // M-1 FIX: Removed keydown listener from AuthProvider — AppShell already registers
-    // click + keydown activity listeners. Having both caused double-registration of keydown,
-    // resulting in refreshActivity() being called twice per keystroke.
+    // ── Activity tracking ─────────────────────────────────────────────────
+    // M-1 FIX: keydown is handled by AppShell to avoid double-registration.
+    // mousemove / pointerdown / scroll / touchstart are registered here only.
     const ACTIVITY_EVENTS = ["mousemove", "pointerdown", "scroll", "touchstart"] as const
-    const handleActivity = () => refreshActivity()
+    const handleActivity = () => useAuthStore.getState().refreshActivity()
     ACTIVITY_EVENTS.forEach((evt) => window.addEventListener(evt, handleActivity, { passive: true }))
 
     // H-03 FIX: Periodically check session expiry (every 60s) so long-open tabs
     // are logged out without needing a page reload or navigation event.
     const sessionCheckInterval = setInterval(() => {
-      const state = useAuthStore.getState()
-      if (state.isAuthenticated && state.isSessionExpired()) {
-        toast.info("Sesi tidak aktif selama 8 jam. Silakan login kembali.")
-        getQueryClient()?.clear()
-        state.logout()
-        window.location.href = '/login?session=expired'
+      const s = useAuthStore.getState()
+      if (s.isAuthenticated && s.isSessionExpired()) {
+        forceLogout("Sesi tidak aktif selama 8 jam. Silakan login kembali.")
       }
     }, 60_000)
 
@@ -81,7 +115,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // also logs out tab B immediately (cross-tab logout synchronization).
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'kahade-auth' && !e.newValue) {
-        // Another tab cleared auth storage (logged out)
         getQueryClient()?.clear()
         useAuthStore.getState().logout()
       }
@@ -97,7 +130,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // H-09 FIX: Use aria-busy instead of aria-hidden.
   // M-2 FIX: Show centered spinner during loading instead of invisible white screen.
-  // Previously opacity:0 + minHeight:100vh made the page look hung with no feedback.
   if (isLoading) {
     return (
       <div
