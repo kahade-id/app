@@ -139,7 +139,7 @@ export function AppBottomNav() {
               style={{
                 flex: 1,
                 overflow: "hidden",
-                borderRadius:         999,
+                borderRadius:         walletOpen ? 24 : 999,
                 background:           "rgba(255,255,255,0.88)",
                 backdropFilter:       "blur(20px)",
                 WebkitBackdropFilter: "blur(20px)",
@@ -251,24 +251,22 @@ export function AppBottomNav() {
                   padding: PAD,
                 }}
               >
-                {/* Sliding highlight — precise: each tab = (100% - 2*PAD) / 4 */}
-                <motion.span
-                  className="absolute rounded-full"
-                  animate={{
-                    left:    activeIndex >= 0
-                      ? `calc(${PAD}px + ${activeIndex} * (100% - ${PAD * 2}px) / 4)`
-                      : PAD,
-                    opacity: activeIndex >= 0 ? 1 : 0,
-                  }}
-                  transition={{ type: "spring", stiffness: 500, damping: 38, mass: 0.7 }}
-                  style={{
-                    width:         `calc((100% - ${PAD * 2}px) / 4)`,
-                    height:        PILL_H - PAD * 2,
-                    top:           PAD,
-                    background:    "rgba(0,0,0,0.07)",
-                    pointerEvents: "none",
-                  }}
-                />
+                {/* Sliding highlight — layoutId for buttery smooth slide */}
+                {activeIndex >= 0 && (
+                  <motion.span
+                    layoutId="nav-highlight"
+                    className="absolute rounded-full"
+                    style={{
+                      left:          `calc(${PAD}px + ${activeIndex} * (100% - ${PAD * 2}px) / 4)`,
+                      width:         `calc((100% - ${PAD * 2}px) / 4)`,
+                      height:        PILL_H - PAD * 2,
+                      top:           PAD,
+                      background:    "rgba(0,0,0,0.07)",
+                      pointerEvents: "none",
+                    }}
+                    transition={{ type: "spring", stiffness: 500, damping: 38, mass: 0.7 }}
+                  />
+                )}
 
                 {NAV_ITEMS.map((item, i) => {
                   const active = i === activeIndex
