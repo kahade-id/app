@@ -66,9 +66,8 @@ export function AppBottomNav() {
   // Dompet is "active" when the sheet is open (regardless of pathname)
   const activeIndex = NAV_ITEMS.findIndex((item) => {
     if (item.isWallet) return sheetOpen
-    return item.href === "/"
-      ? pathname === "/"
-      : pathname === item.href || pathname.startsWith(item.href + "/")
+    // Phase 2 FIX: tidak lagi hardcode "/"
+    return pathname === item.href || pathname.startsWith(item.href + "/")
   })
 
   function handleTap(item: (typeof NAV_ITEMS)[number]) {
