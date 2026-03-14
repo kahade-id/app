@@ -25,7 +25,7 @@ export default function ChatListPage() {
     return (
       (room.orderTitle || "").toLowerCase().includes(q) ||
       room.orderId.toLowerCase().includes(q) ||
-      (room.participants || []).some((p) => p.fullName.toLowerCase().includes(q))
+      (room.participants || []).some((p) => (p.fullName ?? "").toLowerCase().includes(q))
     )
   })
 
@@ -41,7 +41,6 @@ export default function ChatListPage() {
           value={search}
           onChange={setSearch}
           placeholder="Cari chat berdasarkan order atau nama..."
-          data-testid="input-chat-search"
         />
       )}
 
@@ -64,7 +63,7 @@ export default function ChatListPage() {
             >
               <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-border bg-primary/10 text-primary font-semibold text-sm">
                 {room.participants && room.participants.length > 0
-                  ? room.participants[0].fullName.charAt(0).toUpperCase()
+                  ? (room.participants[0].fullName ?? "?").charAt(0).toUpperCase()
                   : <Chat className="size-5 text-foreground/70" />}
               </div>
               <div className="min-w-0 flex-1 space-y-1">
@@ -89,7 +88,7 @@ export default function ChatListPage() {
                 )}
                 {room.participants && room.participants.length > 0 && (
                   <p className="text-xs text-muted-foreground">
-                    {room.participants.map((p) => p.fullName).join(", ")}
+                    {room.participants.map((p) => p.fullName ?? "Pengguna").join(", ")}
                   </p>
                 )}
               </div>
