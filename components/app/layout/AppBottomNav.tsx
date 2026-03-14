@@ -19,7 +19,7 @@ const NAV_VISIBLE_ROUTES = [
 
 function useNavVisible(pathname: string): boolean {
   return NAV_VISIBLE_ROUTES.some((r) =>
-    r === "/" ? pathname === "/" : pathname === r || pathname.startsWith(r + "/")
+    pathname === r || pathname.startsWith(r + "/")
   )
 }
 
