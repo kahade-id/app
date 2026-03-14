@@ -27,8 +27,7 @@ const fraunces = Fraunces({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  // #104 FIX: Updated themeColor to Kahade teal primary brand color
-  themeColor: "#0d9488",
+  themeColor: "#ffffff",
 };
 
 export const metadata: Metadata = {
