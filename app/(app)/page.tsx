@@ -1,222 +1,117 @@
 "use client"
 
-import { useCallback, useMemo } from "react"
+// ─── Splash Screen ─────────────────────────────────────────────────────────────
+// Komponen yang dipakai (semua dari design system yang sudah ada):
+//   - CharacterBackground → animasi latar belakang karakter
+//   - AuthBranding        → logo Kahade, sama dengan halaman auth lain
+//   - motion + AnimatePresence → framer-motion (dependency resmi)
+//   - SpinnerGap          → icon spinner Phosphor, sama dengan LoadingState
+//   - cn                  → class merging utility
+//   - ROUTES              → konstanta route terpusat
+//
+// Flow: mount → 1.5s idle → exit animation → replace ke /beranda atau /onboarding
+
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ShoppingCart, CheckCircle, Warning, Wallet, Plus, ArrowCircleUp, ArrowCircleDown, Scales, ArrowClockwise } from "@phosphor-icons/react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { StatsCard, LoadingState, ErrorState, DataTable, PageHeader, PageTransition, StaggerContainer, StaggerItem } from "@/components/shared"
-import type { DataTableColumn } from "@/components/shared"
-import { usePageTitle } from "@/lib/hooks/use-page-title"
-import { useUserStats } from "@/lib/hooks/use-user"
-import { useWallet } from "@/lib/hooks/use-wallet"
-import { useTransactions, useRecentTransactions } from "@/lib/hooks/use-transactions"
+import { motion, AnimatePresence } from "framer-motion"
+import { SpinnerGap, Shield } from "@phosphor-icons/react"
+
+import { AuthBranding } from "@/components/auth/AuthBranding"
+import { CharacterBackground } from "@/components/public/CharacterBackground"
+import { ROUTES } from "@/lib/constants"
 import { cn } from "@/lib/utils"
-import { formatIDR } from "@/lib/currency"
-import { formatRelative } from "@/lib/date"
-import { ROUTES, ORDER_STATUS_LABELS } from "@/lib/constants"
-import { StatusBadge } from "@/components/shared"
-import type { Order } from "@/types/transaction"
 
-// #53/#274 — All top-level queries run in parallel (each has its own useQuery)
-// React Query automatically parallelises sibling hooks
+// ── Helper: cek cookie access_token (edge-safe, client-only) ─────────────────
+function hasAccessToken(): boolean {
+  if (typeof document === "undefined") return false
+  return document.cookie.split(";").some((c) => c.trim().startsWith("access_token="))
+}
 
-// Stable skeleton IDs avoid index-as-key warning (#38)
-const STATS_SKELETONS = ["s1", "s2", "s3", "s4"] as const
-const ACTION_SKELETONS = ["a1", "a2", "a3", "a4"] as const
+// ── Page ──────────────────────────────────────────────────────────────────────
+export default function SplashPage() {
+  const router  = useRouter()
+  const [show, setShow] = useState(true)
 
-export default function DashboardPage() {
-  usePageTitle("Dashboard")
-  const router = useRouter()
-
-  // #53 — All 3 queries fire simultaneously (no sequential waterfall)
-  const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useUserStats()
-  const { data: wallet, isLoading: walletLoading, isError: walletError, refetch: refetchWallet } = useWallet()
-  // #17 FIX: Gunakan useRecentTransactions (wrapper semantic) bukan useTransactions({ limit: 5 })
-  const { data: txData, isLoading: txLoading, isError: txError, refetch: refetchTx } = useRecentTransactions(5)
-
-  // H-10 FIX: Previously txLoading was excluded from isInitialLoading, so the
-  // "Transaksi Terbaru" table briefly showed "Belum Ada Transaksi" while tx data
-  // was still loading. Including txLoading ensures the skeleton persists until ALL
-  // data is ready, preventing the misleading empty state flash.
-  const isInitialLoading = statsLoading || walletLoading || txLoading
-
-  // #31/#172 — Stable callbacks
-  const handleRefresh = useCallback(() => {
-    refetchStats()
-    refetchWallet()
-    refetchTx()
-  }, [refetchStats, refetchWallet, refetchTx])
-
-  const handleRowClick = useCallback(
-    (row: Order) => router.push(ROUTES.TRANSACTION_DETAIL(row.id)),
-    [router]
-  )
-
-  // H-07: useMemo prevents new array reference on every render, avoiding DataTable re-renders
-  const columns = useMemo<DataTableColumn<Order>[]>(() => [
-    { key: "orderId", header: "ID Order", cell: (row) => <span className="font-mono text-xs">{row.orderId}</span> },
-    { key: "title", header: "Judul", cell: (row) => <span className="font-medium">{row.title}</span> },
-    { key: "status", header: "Status", cell: (row) => <StatusBadge status={row.status} label={ORDER_STATUS_LABELS[row.status]} /> },
-    { key: "orderValue", header: "Nilai", cell: (row) => formatIDR(row.orderValue ?? 0) },
-    { key: "createdAt", header: "Waktu", cell: (row) => formatRelative(row.createdAt) },
-  ], [])
-
-  if (statsError || walletError) {
-    return (
-      <PageTransition className="space-y-6">
-        <ErrorState title="Gagal Memuat Dashboard" onRetry={handleRefresh} />
-      </PageTransition>
+  useEffect(() => {
+    // Minimum splash duration 1500ms, exit animation 250ms, lalu navigate
+    const tExit = setTimeout(() => setShow(false), 1500)
+    const tNav  = setTimeout(
+      () => router.replace(hasAccessToken() ? ROUTES.DASHBOARD : ROUTES.ONBOARDING),
+      1750
     )
-  }
+    return () => { clearTimeout(tExit); clearTimeout(tNav) }
+  }, [router])
 
   return (
-    <PageTransition className="space-y-6">
-      <PageHeader
-        title="Dashboard"
-        description="Ringkasan aktivitas akun Anda"
-        action={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={statsLoading || walletLoading || txLoading}
-            aria-label="Muat ulang data dashboard"
-            data-testid="button-dashboard-refresh"
-          >
-            <ArrowClockwise
-              className={cn("size-4", (statsLoading || walletLoading || txLoading) && "animate-spin")}
-              aria-hidden="true"
-            />
-            Refresh
-          </Button>
-        }
+    <div
+      className="relative flex h-dvh w-full flex-col items-center justify-center overflow-hidden bg-background"
+      aria-label="Memuat Kahade…"
+      aria-live="polite"
+    >
+      {/* Background animasi karakter — lebih tipis dari onboarding */}
+      <CharacterBackground count={70} maxOpacity={0.10} />
+
+      {/* Radial vignette supaya logo terbaca di tengah */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 55% 45% at 50% 50%, hsl(var(--background) / 0.92) 0%, transparent 100%)",
+        }}
+        aria-hidden="true"
       />
 
-      {isInitialLoading ? (
-        <div className="space-y-6" aria-busy="true" aria-label="Memuat dashboard...">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {STATS_SKELETONS.map((k) => (
-              <Skeleton key={k} className="h-[76px] rounded-xl" />
-            ))}
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {ACTION_SKELETONS.map((k) => (
-              <Skeleton key={k} className="h-[72px] rounded-xl" />
-            ))}
-          </div>
-          <div className="grid gap-6 lg:grid-cols-3">
-            <Skeleton className="h-64 rounded-xl lg:col-span-2" />
-            <Skeleton className="h-64 rounded-xl" />
-          </div>
-        </div>
-      ) : (
-        <>
-          <StaggerContainer className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <StaggerItem>
-              <StatsCard title="Total Transaksi" value={stats?.totalOrders ?? 0} icon={ShoppingCart} />
-            </StaggerItem>
-            <StaggerItem>
-              <StatsCard title="Transaksi Selesai" value={stats?.completedOrders ?? 0} icon={CheckCircle} />
-            </StaggerItem>
-            <StaggerItem>
-              <StatsCard title="Dispute Aktif" value={stats?.activeDisputes ?? 0} icon={Warning} />
-            </StaggerItem>
-            <StaggerItem>
-              <StatsCard title="Saldo Wallet" value={formatIDR(wallet?.availableBalance ?? 0)} icon={Wallet} />
-            </StaggerItem>
-          </StaggerContainer>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Aksi Cepat</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <Button className="h-auto flex-col gap-2 py-4" onClick={() => router.push(ROUTES.TRANSACTION_NEW)} data-testid="button-quick-create-transaction">
-                  <Plus className="size-5" aria-hidden="true" />
-                  <span>Buat Transaksi</span>
-                </Button>
-                <Button variant="outline" className="h-auto flex-col gap-2 py-4" onClick={() => router.push(ROUTES.WALLET_TOPUP)} data-testid="button-quick-topup">
-                  <ArrowCircleUp className="size-5" aria-hidden="true" />
-                  <span>Top Up</span>
-                </Button>
-                <Button variant="outline" className="h-auto flex-col gap-2 py-4" onClick={() => router.push(ROUTES.WALLET_WITHDRAW)} data-testid="button-quick-withdraw">
-                  <ArrowCircleDown className="size-5" aria-hidden="true" />
-                  <span>Tarik Dana</span>
-                </Button>
-                <Button variant="outline" className="h-auto flex-col gap-2 py-4" onClick={() => router.push(ROUTES.DISPUTES)} data-testid="button-quick-disputes">
-                  <Scales className="size-5" aria-hidden="true" />
-                  <span>Dispute</span>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid gap-6 lg:grid-cols-3">
-            {txError ? (
-              <Card className="lg:col-span-2">
-                <CardHeader><CardTitle className="text-base">Transaksi Terbaru</CardTitle></CardHeader>
-                <CardContent><ErrorState onRetry={() => refetchTx()} /></CardContent>
-              </Card>
-            ) : (
-              <Card className="lg:col-span-2">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                  <CardTitle className="text-base">Transaksi Terbaru</CardTitle>
-                  <Button variant="ghost" size="sm" onClick={() => router.push(ROUTES.TRANSACTIONS)} data-testid="button-see-all-transactions">Lihat Semua</Button>
-                </CardHeader>
-                <CardContent>
-                  <DataTable
-                    columns={columns}
-                    data={txData?.data ?? []}
-                    isLoading={txLoading}
-                    emptyTitle="Belum Ada Transaksi"
-                    emptyDescription="Anda belum memiliki transaksi."
-                    onRowClick={handleRowClick}
-                    rowKey={(row) => row.id}
-                    testId="dashboard-transactions"
-                    caption="5 transaksi terbaru"
-                  />
-                </CardContent>
-              </Card>
-            )}
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Ringkasan Wallet</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                {walletLoading ? (
-                  <LoadingState text="Memuat wallet..." />
-                ) : wallet ? (
-                  <>
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Saldo Tersedia</span>
-                        <span className="font-semibold">{formatIDR(wallet.availableBalance)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Dana Escrow</span>
-                        <span className="font-semibold">{formatIDR(wallet.escrowBalance)}</span>
-                      </div>
-                      <div className="flex justify-between border-t pt-3 text-sm">
-                        <span className="text-muted-foreground">Total Saldo</span>
-                        <span className="text-base font-bold">{formatIDR(wallet.totalBalance)}</span>
-                      </div>
-                    </div>
-                    <Button variant="outline" className="w-full" onClick={() => router.push(ROUTES.WALLET)} data-testid="button-goto-wallet-detail">
-                      Lihat Detail Wallet
-                    </Button>
-                  </>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Data wallet tidak tersedia.</p>
+      {/* ── Logo + wordmark ────────────────────────────────────── */}
+      <AnimatePresence>
+        {show && (
+          <motion.div
+            key="splash-logo"
+            className="relative z-10 flex flex-col items-center gap-5"
+            initial={{ opacity: 0, scale: 0.88, y: 12 }}
+            animate={{ opacity: 1, scale: 1,    y: 0  }}
+            exit={{   opacity: 0, scale: 1.04,  y: -8 }}
+            transition={{ duration: 0.4, ease: [0.22, 0.68, 0, 1.15] }}
+          >
+            {/* Shield icon + pulse ring */}
+            <div className="relative">
+              {/* Pulse ring — menggunakan motion animate, tidak butuh CSS @keyframe baru */}
+              <motion.span
+                className="absolute inset-0 rounded-2xl bg-primary/15"
+                animate={{ scale: [1, 1.22, 1], opacity: [0.6, 0, 0.6] }}
+                transition={{ duration: 2.2, ease: "easeInOut", repeat: Infinity }}
+                aria-hidden="true"
+              />
+              <div
+                className={cn(
+                  "relative flex size-20 items-center justify-center",
+                  "rounded-2xl bg-primary text-primary-foreground shadow-xl"
                 )}
-              </CardContent>
-            </Card>
-          </div>
-        </>
-      )}
-    </PageTransition>
+              >
+                <Shield className="size-10" weight="fill" aria-hidden="true" />
+              </div>
+            </div>
+
+            {/* Branding — AuthBranding yang sudah konsisten */}
+            <div className="flex flex-col items-center gap-1">
+              <AuthBranding />
+              <p className="text-sm font-light tracking-wide text-muted-foreground">
+                Escrow P2P yang Aman
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Spinner bawah — SpinnerGap konsisten dengan LoadingState ── */}
+      <motion.div
+        className="absolute bottom-16 z-10"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: show ? 1 : 0 }}
+        transition={{ delay: 0.4, duration: 0.3 }}
+        aria-hidden="true"
+      >
+        <SpinnerGap className="size-5 animate-spin text-muted-foreground/40" />
+      </motion.div>
+    </div>
   )
 }
