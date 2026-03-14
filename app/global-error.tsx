@@ -111,7 +111,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
                 Coba Lagi
               </button>
               <a
-                href="/"
+                href="/beranda"
                 data-testid="link-go-dashboard"
                 style={{
                   background: "Canvas",
