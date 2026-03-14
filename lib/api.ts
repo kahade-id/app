@@ -216,6 +216,24 @@ api.interceptors.response.use(
   }
 )
 
+// ── Proactive token refresh (used by AuthProvider on hard refresh) ─────────
+// IMPORTANT: Uses bare axios, NOT the api instance.
+// The api instance has the 401 interceptor which itself calls refreshAccessToken —
+// calling it through the api instance would cause infinite recursion.
+// This function is intentionally a thin wrapper around the same pattern used
+// inside the interceptor, exported so AuthProvider can call it on mount.
+export async function refreshAccessToken(): Promise<string> {
+  const { data } = await axios.post<ApiResponse<{ accessToken: string }>>(
+    `${BASE_URL}/auth/refresh`,
+    {},
+    { withCredentials: true }
+  )
+  if (!data.data?.accessToken) {
+    throw new Error('No access token in refresh response')
+  }
+  return data.data.accessToken
+}
+
 export function generateIdempotencyKey(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID()
