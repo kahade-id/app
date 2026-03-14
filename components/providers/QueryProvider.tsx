@@ -3,9 +3,6 @@
 import { useState, lazy, Suspense } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-// CQ-020 FIX: Export a singleton queryClient reference so AuthProvider can call
-// queryClient.clear() when a token expires via AuthProvider (not useLogout hook).
-// This avoids stale cached data persisting after auto-logout due to token expiry.
 let queryClientSingleton: QueryClient | null = null
 
 export function getQueryClient(): QueryClient | null {
@@ -28,7 +25,16 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
         queries: {
           staleTime: 60 * 1000,
           gcTime: 5 * 60 * 1000,
-          retry: 1,
+          // FIX: Naikkan retry dari 1 → 3 dengan exponential backoff.
+          // Backend kadang butuh warm-up setelah idle. Dengan retry:1, dua
+          // kegagalan langsung masuk error state yang dikunci 60s.
+          // Dengan retry:3 + delay bertahap → lebih toleran terhadap cold start.
+          retry: 3,
+          retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
+          // FIX: refetchOnMount: 'always' saat query dalam error state supaya
+          // saat user navigasi ke halaman yang pernah error, langsung refetch
+          // tanpa perlu tunggu staleTime atau tekan "Coba Lagi" manual.
+          refetchOnMount: true,
           refetchOnWindowFocus: false,
         },
         mutations: {
