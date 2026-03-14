@@ -3,22 +3,40 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
-import { SquaresFour, ArrowsLeftRight, Wallet, Bell, User } from "@phosphor-icons/react"
+import { House, Receipt, Plus, Wallet, User } from "@phosphor-icons/react"
 import { cn } from "@/lib/utils"
 import { ROUTES } from "@/lib/constants"
-import { useUnreadNotificationCount } from "@/lib/hooks/use-notifications"
 
-const BOTTOM_NAV_ITEMS = [
-  { label: "Dashboard", href: ROUTES.DASHBOARD, icon: SquaresFour },
-  { label: "Transaksi", href: ROUTES.TRANSACTIONS, icon: ArrowsLeftRight },
-  { label: "Dompet", href: ROUTES.WALLET, icon: Wallet },
-  { label: "Notifikasi", href: ROUTES.NOTIFICATIONS, icon: Bell },
-  { label: "Profil", href: ROUTES.PROFILE, icon: User },
+// Pages where the bottom nav should be visible.
+// Checks both exact match (for root "/") and prefix match (for nested routes).
+const BOTTOM_NAV_ROUTES = [
+  ROUTES.DASHBOARD,    // "/"
+  ROUTES.TRANSACTIONS, // "/transaksi"
+  ROUTES.WALLET,       // "/wallet"
+  ROUTES.PROFILE,      // "/profil"
+]
+
+function useIsBottomNavVisible(pathname: string): boolean {
+  return BOTTOM_NAV_ROUTES.some((route) =>
+    route === "/"
+      ? pathname === "/"
+      : pathname === route || pathname.startsWith(route + "/")
+  )
+}
+
+const NAV_ITEMS_LEFT = [
+  { label: "Beranda",   href: ROUTES.DASHBOARD,    icon: House   },
+  { label: "Transaksi", href: ROUTES.TRANSACTIONS, icon: Receipt },
+]
+
+const NAV_ITEMS_RIGHT = [
+  { label: "Dompet", href: ROUTES.WALLET,   icon: Wallet },
+  { label: "Profil", href: ROUTES.PROFILE,  icon: User   },
 ]
 
 export function AppBottomNav() {
   const pathname = usePathname()
-  const { data: unreadCount = 0 } = useUnreadNotificationCount()
+  const isVisible = useIsBottomNavVisible(pathname)
 
   // H-2 FIX: isDesktop must live in state, not evaluated inline during render.
   // Inline evaluation returns false on SSR (no window), but potentially true on client,
@@ -28,19 +46,23 @@ export function AppBottomNav() {
     setIsDesktop(window.innerWidth >= 1024)
   }, [])
 
+  // Only render on the four designated pages, and never on desktop.
+  if (!isVisible) return null
+
   return (
     <nav
       aria-label="Navigasi bawah"
       aria-hidden={isDesktop ? true : undefined}
-      className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:hidden pb-[env(safe-area-inset-bottom)]"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-100 bg-white lg:hidden pb-[env(safe-area-inset-bottom)]"
     >
-      <div className="flex items-center justify-around h-16">
-        {BOTTOM_NAV_ITEMS.map((item) => {
-          const isActive = item.href === "/"
-            ? pathname === "/"
-            : pathname === item.href || pathname.startsWith(item.href + "/")
+      <div className="flex items-center justify-around h-16 px-2">
+        {/* Left items: Beranda, Transaksi */}
+        {NAV_ITEMS_LEFT.map((item) => {
+          const isActive =
+            item.href === "/"
+              ? pathname === "/"
+              : pathname === item.href || pathname.startsWith(item.href + "/")
           const Icon = item.icon
-          const showBadge = item.href === ROUTES.NOTIFICATIONS && unreadCount > 0
 
           return (
             <Link
@@ -49,20 +71,52 @@ export function AppBottomNav() {
               aria-current={isActive ? "page" : undefined}
               data-testid={`nav-link-${item.label.toLowerCase()}`}
               className={cn(
-                "flex flex-col items-center gap-1 px-3 py-2 text-xs font-medium transition-colors relative",
-                isActive
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                "flex flex-col items-center gap-1 px-4 py-2 text-xs font-medium transition-colors",
+                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <div className="relative">
-                <Icon className="size-5" />
-                {showBadge && (
-                  <span className="absolute -top-1 -right-1.5 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold min-w-[14px] h-[14px] px-0.5">
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </span>
-                )}
-              </div>
+              <Icon
+                className="size-5"
+                weight={isActive ? "fill" : "regular"}
+              />
+              <span>{item.label}</span>
+            </Link>
+          )
+        })}
+
+        {/* Center: Quick-create transaction button */}
+        <Link
+          href={ROUTES.TRANSACTION_NEW}
+          aria-label="Buat transaksi baru"
+          data-testid="nav-link-buat-transaksi"
+          className="flex flex-col items-center gap-1 px-4 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <span className="flex items-center justify-center size-10 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors">
+            <Plus className="size-5 text-gray-600" weight="bold" />
+          </span>
+        </Link>
+
+        {/* Right items: Dompet, Profil */}
+        {NAV_ITEMS_RIGHT.map((item) => {
+          const isActive =
+            pathname === item.href || pathname.startsWith(item.href + "/")
+          const Icon = item.icon
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={isActive ? "page" : undefined}
+              data-testid={`nav-link-${item.label.toLowerCase()}`}
+              className={cn(
+                "flex flex-col items-center gap-1 px-4 py-2 text-xs font-medium transition-colors",
+                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Icon
+                className="size-5"
+                weight={isActive ? "fill" : "regular"}
+              />
               <span>{item.label}</span>
             </Link>
           )
