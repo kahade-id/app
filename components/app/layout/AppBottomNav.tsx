@@ -1,8 +1,7 @@
 "use client"
 
-import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import {
   House, Receipt, Wallet, GearSix, Plus,
   ArrowCircleUp, ArrowCircleDown, Clock, DotsThree,
@@ -11,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { ROUTES } from "@/lib/constants"
 import { useWallet } from "@/lib/hooks/use-wallet"
 import { formatIDR } from "@/lib/currency"
+import { CreateTransactionSheet } from "@/components/app/transaction/CreateTransactionSheet"
 
 // ── Visibility ────────────────────────────────────────────────
 const NAV_VISIBLE_ROUTES = [
@@ -57,7 +57,19 @@ export function AppBottomNav() {
 
   const [isDesktop, setIsDesktop] = useState(false)
   const [walletOpen, setWalletOpen] = useState(false)
-  const [isRounded, setIsRounded] = useState(true) // tracks borderRadius separately from walletOpen
+  const [txSheetOpen, setTxSheetOpen] = useState(false)
+  const [isRounded, setIsRounded] = useState(true)
+  const tabRowRef = useRef<HTMLDivElement>(null)
+  const [tabW, setTabW] = useState(0)
+
+  useEffect(() => {
+    const el = tabRowRef.current
+    if (!el) return
+    const ro = new ResizeObserver(() => setTabW(el.clientWidth))
+    ro.observe(el)
+    setTabW(el.clientWidth)
+    return () => ro.disconnect()
+  }, []) // tracks borderRadius separately from walletOpen
 
   // When wallet opens → immediately square corners (24px)
   // When wallet closes → delay returning to pill (999px) until collapse finishes (~500ms)
@@ -110,6 +122,9 @@ export function AppBottomNav() {
 
   return (
     <>
+      {/* Tx sheet */}
+      <CreateTransactionSheet open={txSheetOpen} onClose={() => setTxSheetOpen(false)} />
+
       {/* Scrim */}
       <AnimatePresence>
         {walletOpen && (
@@ -255,6 +270,7 @@ export function AppBottomNav() {
 
               {/* ── Tab row (always visible) ──────────────────── */}
               <div
+                ref={tabRowRef}
                 style={{
                   position: "relative",
                   display: "flex",
@@ -263,22 +279,24 @@ export function AppBottomNav() {
                   padding: PAD,
                 }}
               >
-                {/* Sliding highlight — layoutId for buttery smooth slide */}
-                {activeIndex >= 0 && (
-                  <motion.span
-                    layoutId="nav-highlight"
-                    className="absolute rounded-full"
-                    style={{
-                      left:          `calc(${PAD}px + ${activeIndex} * (100% - ${PAD * 2}px) / 4)`,
-                      width:         `calc((100% - ${PAD * 2}px) / 4)`,
-                      height:        PILL_H - PAD * 2,
-                      top:           PAD,
-                      background:    "rgba(0,0,0,0.07)",
-                      pointerEvents: "none",
-                    }}
-                    transition={{ type: "spring", stiffness: 500, damping: 38, mass: 0.7 }}
-                  />
-                )}
+                {/* Sliding highlight — pixel values so Framer can interpolate smoothly */}
+                {tabW > 0 && activeIndex >= 0 && (() => {
+                  const itemW = (tabW - PAD * 2) / 4
+                  return (
+                    <motion.span
+                      className="absolute rounded-full"
+                      animate={{ left: PAD + activeIndex * itemW }}
+                      transition={{ type: "spring", stiffness: 500, damping: 38, mass: 0.7 }}
+                      style={{
+                        width:         itemW,
+                        height:        PILL_H - PAD * 2,
+                        top:           PAD,
+                        background:    "rgba(0,0,0,0.07)",
+                        pointerEvents: "none",
+                      }}
+                    />
+                  )
+                })()}
 
                 {NAV_ITEMS.map((item, i) => {
                   const active = i === activeIndex
@@ -330,11 +348,11 @@ export function AppBottomNav() {
               transition={{ type: "spring", stiffness: 600, damping: 28 }}
               style={{ flexShrink: 0 }}
             >
-              <Link
-                href={ROUTES.TRANSACTION_NEW}
+              <button
+                type="button"
                 aria-label="Buat transaksi baru"
                 data-testid="nav-plus"
-                onClick={() => setWalletOpen(false)}
+                onClick={() => { setWalletOpen(false); setTxSheetOpen(true) }}
                 className="flex items-center justify-center rounded-full"
                 style={{
                   width: FAB_SIZE, height: FAB_SIZE,
@@ -346,10 +364,11 @@ export function AppBottomNav() {
                     "inset 0 1px 0 rgba(255,255,255,0.9)," +
                     "0 8px 32px rgba(0,0,0,0.09)," +
                     "0 2px 8px rgba(0,0,0,0.05)",
+                  cursor: "pointer",
                 }}
               >
                 <Plus size={22} weight="bold" style={{ color: INACTIVE }} />
-              </Link>
+              </button>
             </motion.div>
 
           </div>
