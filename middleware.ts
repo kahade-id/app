@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { AUTH_ROUTES } from '@/lib/route-constants'
+import { AUTH_ROUTES, PUBLIC_ROUTES } from '@/lib/route-constants'
 
 // C-03 NOTE: Edge runtime cannot run Node.js crypto (e.g. jsonwebtoken) so signature
 // verification is not possible here. This function only checks the exp claim as a
@@ -47,10 +47,16 @@ export function middleware(request: NextRequest) {
 
   const isAuthRoute = AUTH_ROUTES.some(route => pathname === route || pathname.startsWith(route + '/'))
 
+  // Rute publik (onboarding, dll) — tidak butuh autentikasi, tidak redirect ke home
+  const isPublicRoute = PUBLIC_ROUTES.some(route => pathname === route || pathname.startsWith(route + '/'))
+  if (isPublicRoute) {
+    return NextResponse.next()
+  }
+
   if (isAuthRoute) {
-    // Jika ada token dan belum expired, redirect ke home
+    // Jika ada token dan belum expired, redirect ke dashboard baru
     if (accessToken && !isJwtExpired(accessToken)) {
-      return NextResponse.redirect(new URL('/', request.url))
+      return NextResponse.redirect(new URL('/beranda', request.url))
     }
     return NextResponse.next()
   }
@@ -59,7 +65,9 @@ export function middleware(request: NextRequest) {
   if (!accessToken || isJwtExpired(accessToken)) {
     const loginUrl = new URL('/login', request.url)
     const fullRedirect = pathname + request.nextUrl.search
-    if (pathname !== '/') {
+    // Simpan deep link — kecuali kalau dari root (splash) atau beranda
+    const isDeepLink = pathname !== '/' && pathname !== '/beranda'
+    if (isDeepLink) {
       const isValidRedirect =
         fullRedirect.startsWith('/') &&
         !fullRedirect.startsWith('//') &&
