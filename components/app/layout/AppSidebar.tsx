@@ -70,13 +70,13 @@ export function AppSidebar() {
               <div className="size-9 rounded-full bg-muted flex items-center justify-center text-xs font-semibold">
                 {/* #068 FIX: filter(Boolean) guards against empty tokens from multiple spaces;
                      optional chaining on n[0] prevents crash on edge-case fullNames */}
-                {user.fullName
+                {(user.fullName ?? "")
                   .split(" ")
                   .filter(Boolean)
                   .map((n) => n[0] ?? "")
                   .join("")
                   .toUpperCase()
-                  .slice(0, 2)}
+                  .slice(0, 2) || "?"}
               </div>
             )}
             <div className="flex-1 min-w-0">
