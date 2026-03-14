@@ -30,9 +30,8 @@ export function AppSidebar() {
       <ScrollArea className="flex-1 py-4">
         <nav aria-label="Navigasi samping" className="flex flex-col gap-1 px-3">
           {NAV_ITEMS.map((item) => {
-            const isActive = item.href === "/"
-              ? pathname === "/"
-              : pathname === item.href || pathname.startsWith(item.href + "/")
+            // Phase 2 FIX: tidak lagi hardcode "/"
+            const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
             const Icon = item.icon
             return (
               <Link
