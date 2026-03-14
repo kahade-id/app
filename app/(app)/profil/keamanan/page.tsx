@@ -13,14 +13,18 @@ import { ChangePasswordForm } from "@/components/app/profile/ChangePasswordForm"
 import { TwoFASetupModal } from "@/components/app/profile/TwoFASetupModal"
 import { TwoFADisableModal } from "@/components/app/profile/TwoFADisableModal"
 import { useMe, useDeleteRequest } from "@/lib/hooks/use-user"
-import { useAuthStore } from "@/lib/stores/auth.store"
+import { useLogout } from "@/lib/hooks/use-auth"
 import { ROUTES } from "@/lib/constants"
 
 export default function KeamananPage() {
   const router = useRouter()
   const { data: user, isLoading, isError, refetch } = useMe()
   const deleteRequest = useDeleteRequest()
-  const logout = useAuthStore((s) => s.logout)
+  // AUTH-04 FIX: Use useLogout() hook instead of calling logout() from store directly.
+  // store.logout() only clears localStorage — it does NOT clear React Query cache.
+  // useLogout() calls POST /auth/logout (revokes refresh token server-side), then
+  // calls queryClient.clear() to flush all cached data before redirecting.
+  const logoutMutation = useLogout()
 
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
   const [deletePassword, setDeletePassword] = React.useState("")
@@ -31,10 +35,10 @@ export default function KeamananPage() {
     deleteRequest.mutate(
       { password: deletePassword, reason: deleteReason.trim() || undefined },
       {
-        onSuccess: async () => {
+        onSuccess: () => {
           setShowDeleteDialog(false)
-          await logout()
-          router.push(ROUTES.LOGIN)
+          // Logout via hook: clears server session + query cache, then redirects to /login
+          logoutMutation.mutate()
         },
       }
     )
