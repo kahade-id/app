@@ -8,7 +8,6 @@ import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { ROUTES } from "@/lib/constants"
 
-// Pages where the bottom nav should be visible.
 const BOTTOM_NAV_ROUTES = [
   ROUTES.DASHBOARD,
   ROUTES.TRANSACTIONS,
@@ -31,18 +30,20 @@ const NAV_ITEMS = [
   { label: "Profil",    href: ROUTES.PROFILE,      icon: User    },
 ]
 
-// Pill geometry — all measurements in px for pixel-perfect alignment
-const ITEM_W    = 72   // width of each nav tab
-const ITEM_H    = 60   // height of the pill container inner area
-const PAD       = 5    // pill inner padding
-const PILL_H    = ITEM_H + PAD * 2   // total pill outer height = 70px
-const PLUS_SIZE = PILL_H             // + button matches pill height exactly
+// ── Design tokens ──────────────────────────────────────────
+const INACTIVE_COLOR = "#757575"  // unified — same for all icons + labels + plus
+const ACTIVE_COLOR   = "#0f0f0f"  // near-black for active state
+
+const ITEM_W  = 72   // px — width per tab
+const ITEM_H  = 48   // px — inner height (tighter than before)
+const PAD     = 5    // px — pill padding
+const PILL_H  = ITEM_H + PAD * 2  // 58px total
+const PLUS_SZ = PILL_H            // + circle matches pill height
 
 export function AppBottomNav() {
   const pathname = usePathname()
   const isVisible = useIsBottomNavVisible(pathname)
 
-  // H-2 FIX: isDesktop in state to prevent SSR hydration mismatch
   const [isDesktop, setIsDesktop] = useState(false)
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)")
@@ -68,30 +69,43 @@ export function AppBottomNav() {
       <div className="pb-[env(safe-area-inset-bottom)]">
         <div
           className="flex items-center gap-3 px-4 pointer-events-auto"
-          style={{ paddingBottom: 14, paddingTop: 6 }}
+          style={{ paddingBottom: 16, paddingTop: 4 }}
         >
 
-          {/* ── Pill ────────────────────────────────────────── */}
+          {/* ── Pill ─────────────────────────────────── */}
           <div
-            className="relative flex flex-1 items-center bg-white rounded-[999px]"
+            className="relative flex flex-1 items-center rounded-[999px] border border-white/60"
             style={{
               height: PILL_H,
               padding: PAD,
-              boxShadow: "0 4px 24px rgba(0,0,0,0.09), 0 1px 4px rgba(0,0,0,0.06)",
+              // Glass effect
+              background: "rgba(255,255,255,0.78)",
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
+              boxShadow:
+                "0 8px 32px rgba(0,0,0,0.08)," +
+                "0 2px 8px rgba(0,0,0,0.05)," +
+                "inset 0 1px 0 rgba(255,255,255,0.9)",
             }}
           >
-            {/* Sliding active highlight */}
+            {/* ── Sliding highlight ─────────────────── */}
             {activeIndex !== -1 && (
               <motion.span
-                layoutId="bottom-nav-highlight"
-                className="absolute rounded-full bg-gray-100"
+                layoutId="nav-pill"
+                className="absolute rounded-full"
                 style={{
                   width: ITEM_W,
                   height: ITEM_H,
                   top: PAD,
                   left: PAD + activeIndex * ITEM_W,
+                  background: "rgba(0,0,0,0.07)",
                 }}
-                transition={{ type: "spring", stiffness: 420, damping: 34, mass: 0.85 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 500,
+                  damping: 38,
+                  mass: 0.7,
+                }}
               />
             )}
 
@@ -100,53 +114,74 @@ export function AppBottomNav() {
               const Icon = item.icon
 
               return (
-                <Link
+                <motion.div
                   key={item.href}
-                  href={item.href}
-                  aria-current={isActive ? "page" : undefined}
-                  data-testid={`nav-link-${item.label.toLowerCase()}`}
-                  className="relative z-10 flex flex-col items-center justify-center gap-[3px] select-none"
+                  whileTap={{ scale: 0.88 }}
+                  transition={{ type: "spring", stiffness: 600, damping: 28 }}
                   style={{ width: ITEM_W, height: ITEM_H, flexShrink: 0 }}
                 >
-                  <Icon
-                    size={24}
-                    weight={isActive ? "fill" : "regular"}
-                    className={cn(
-                      "transition-all duration-200",
-                      isActive
-                        ? "text-gray-900 scale-[1.08]"
-                        : "text-gray-400"
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      "transition-all duration-200 leading-none tracking-tight",
-                      isActive
-                        ? "text-[11px] font-semibold text-gray-900"
-                        : "text-[11px] font-medium text-gray-400"
-                    )}
+                  <Link
+                    href={item.href}
+                    aria-current={isActive ? "page" : undefined}
+                    data-testid={`nav-link-${item.label.toLowerCase()}`}
+                    className="relative z-10 flex h-full w-full flex-col items-center justify-center gap-[2px] select-none"
                   >
-                    {item.label}
-                  </span>
-                </Link>
+                    <motion.div
+                      animate={isActive
+                        ? { scale: 1.1, y: -1 }
+                        : { scale: 1,   y: 0  }
+                      }
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    >
+                      <Icon
+                        size={22}
+                        weight={isActive ? "fill" : "regular"}
+                        style={{ color: isActive ? ACTIVE_COLOR : INACTIVE_COLOR }}
+                      />
+                    </motion.div>
+                    <span
+                      className="leading-none tracking-tight"
+                      style={{
+                        fontSize: 10.5,
+                        fontWeight: isActive ? 650 : 500,
+                        color: isActive ? ACTIVE_COLOR : INACTIVE_COLOR,
+                        transition: "color 0.18s, font-weight 0.18s",
+                      }}
+                    >
+                      {item.label}
+                    </span>
+                  </Link>
+                </motion.div>
               )
             })}
           </div>
 
-          {/* ── Plus ────────────────────────────────────────── */}
-          <Link
-            href={ROUTES.TRANSACTION_NEW}
-            aria-label="Buat transaksi baru"
-            data-testid="nav-link-buat-transaksi"
-            className="flex items-center justify-center shrink-0 rounded-full bg-white active:scale-95 transition-transform"
-            style={{
-              width: PLUS_SIZE,
-              height: PLUS_SIZE,
-              boxShadow: "0 4px 24px rgba(0,0,0,0.09), 0 1px 4px rgba(0,0,0,0.06)",
-            }}
+          {/* ── Plus ─────────────────────────────────── */}
+          <motion.div
+            whileTap={{ scale: 0.88 }}
+            transition={{ type: "spring", stiffness: 600, damping: 28 }}
+            style={{ flexShrink: 0 }}
           >
-            <Plus size={22} weight="bold" className="text-gray-500" />
-          </Link>
+            <Link
+              href={ROUTES.TRANSACTION_NEW}
+              aria-label="Buat transaksi baru"
+              data-testid="nav-link-buat-transaksi"
+              className="flex items-center justify-center rounded-full border border-white/60"
+              style={{
+                width: PLUS_SZ,
+                height: PLUS_SZ,
+                background: "rgba(255,255,255,0.78)",
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
+                boxShadow:
+                  "0 8px 32px rgba(0,0,0,0.08)," +
+                  "0 2px 8px rgba(0,0,0,0.05)," +
+                  "inset 0 1px 0 rgba(255,255,255,0.9)",
+              }}
+            >
+              <Plus size={20} weight="bold" style={{ color: INACTIVE_COLOR }} />
+            </Link>
+          </motion.div>
 
         </div>
       </div>
