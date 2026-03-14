@@ -139,7 +139,24 @@ export const useAuthStore = create<AuthState>()(
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
-          state.setLoading(false)
+          // RS-1 FIX: Do NOT set isLoading=false when the user is authenticated.
+          // accessToken is intentionally excluded from persistence (C-01) so after
+          // a hard refresh it will always be null even though isAuthenticated=true.
+          // If we clear isLoading immediately, React Query fires useMe() with no
+          // Bearer token → 401 → error state ("Gagal Memuat Profil") before the
+          // access token has been restored via /auth/refresh.
+          //
+          // When authenticated: keep isLoading=true.
+          // AuthProvider.bootstrap() will call /auth/refresh, set the new access
+          // token, and only then call setLoading(false). This ensures no query
+          // fires before the token is available.
+          //
+          // When NOT authenticated (e.g. user on auth pages): clear loading now
+          // because there's nothing to restore.
+          if (!state.isAuthenticated) {
+            state.setLoading(false)
+          }
+          // Authenticated case: AuthProvider handles setLoading(false) after refresh.
         }
       },
     }
