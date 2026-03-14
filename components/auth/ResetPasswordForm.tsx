@@ -59,10 +59,16 @@ export function ResetPasswordForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
+                {/* AUTH-07 FIX: readOnly — email is pre-filled from ?email= URL param
+                    (set by ForgotPasswordForm after OTP is sent to this address).
+                    Making it editable would allow resetting a different account's password
+                    using an OTP sent to a different email. */}
                 <Input
                   type="email"
                   placeholder="nama@email.com"
                   autoComplete="email"
+                  readOnly
+                  className="bg-muted cursor-not-allowed"
                   {...field}
                 />
               </FormControl>
