@@ -20,9 +20,15 @@ export default function AppError({ error, reset }: { error: Error & { digest?: s
         <Warning className="size-8" />
       </div>
       <h2 className="mb-2 text-xl font-bold">Terjadi Kesalahan</h2>
-      <p className="mb-6 max-w-md text-sm text-muted-foreground">
+      <p className="mb-4 max-w-md text-sm text-muted-foreground">
         Maaf, terjadi kesalahan yang tidak terduga. Silakan coba lagi.
       </p>
+      {(error.digest || error.message) && (
+        <div className="mb-6 max-w-md w-full text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2 font-mono break-all space-y-1 text-left">
+          {error.digest && <p><span className="font-semibold">Error ID:</span> {error.digest}</p>}
+          {error.message && <p><span className="font-semibold">Detail:</span> {error.message}</p>}
+        </div>
+      )}
       <Button onClick={reset} data-testid="button-app-error-retry">Coba Lagi</Button>
     </div>
   )
