@@ -47,7 +47,7 @@ const ACTIONS = [
   {
     label:     "Detail",
     href:      ROUTES.WALLET,
-    icon:      DotsThreeHorizontal,
+    icon:      DotsThree,
     bg:        "#f2f2f2",
     color:     "#525252",
     testId:    "ws-detail",
