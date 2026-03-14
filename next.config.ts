@@ -33,7 +33,7 @@ const cdnImgSrc = cdnHostname ? `https://${cdnHostname}` : ''
 // Replace /api/csp-report with your actual reporting endpoint.
 const ContentSecurityPolicy = `
   default-src 'self';
-  script-src 'self' ${isDev ? "'unsafe-eval' 'unsafe-inline'" : ''};
+  script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ''};
   style-src 'self' 'unsafe-inline';
   img-src 'self' blob: data: ${cdnImgSrc};
   font-src 'self';
