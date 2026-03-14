@@ -145,6 +145,21 @@ api.interceptors.response.use(
       return Promise.reject(error)
     }
 
+    // AUTH-INTERCEPT FIX: Never run the refresh-and-retry cycle for auth endpoints.
+    // When POST /auth/login returns 401 (wrong password), we must NOT call
+    // /auth/refresh — doing so would silently restore an old session via the
+    // HttpOnly refresh cookie still in the browser, set a new access_token cookie
+    // server-side, and cause any subsequent navigation to redirect to the app
+    // even though the login itself failed.
+    // Same guard applies to /auth/2fa/verify-login.
+    const AUTH_SKIP_REFRESH_URLS = ['/auth/login', '/auth/refresh', '/auth/2fa/verify-login']
+    const isAuthEndpoint = AUTH_SKIP_REFRESH_URLS.some(
+      (path) => original.url?.endsWith(path)
+    )
+    if (isAuthEndpoint) {
+      return Promise.reject(error)
+    }
+
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true
 
