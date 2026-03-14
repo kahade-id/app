@@ -14,8 +14,12 @@ export const ROUTES = {
   RESET_PASSWORD: '/reset-password',
   TWO_FA_VERIFY: '/2fa-verify',
 
+  // Public
+  SPLASH: '/',
+  ONBOARDING: '/onboarding',
+
   // App
-  DASHBOARD: '/',
+  DASHBOARD: '/beranda',
   TRANSACTIONS: '/transaksi',
   TRANSACTION_NEW: '/transaksi/buat',
   TRANSACTION_DETAIL: (id: string) => `/transaksi/${id}`,
