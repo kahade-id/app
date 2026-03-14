@@ -73,10 +73,13 @@ export function AppBottomNav() {
 
   if (!visible || isDesktop) return null
 
-  const activeIndex = NAV_ITEMS.findIndex((item) => {
-    if (item.isWallet) return walletOpen
-    return pathname === item.href || pathname.startsWith(item.href + "/")
-  })
+  // Wallet takes priority — even if pathname matches another tab
+  const walletIndex = NAV_ITEMS.findIndex((item) => item.isWallet)
+  const activeIndex = walletOpen
+    ? walletIndex
+    : NAV_ITEMS.findIndex((item) =>
+        !item.isWallet && (pathname === item.href || pathname.startsWith(item.href + "/"))
+      )
 
   function handleTap(item: (typeof NAV_ITEMS)[number]) {
     if (item.isWallet) { setWalletOpen((v) => !v); return }
@@ -132,11 +135,11 @@ export function AppBottomNav() {
             {/* ── Expandable Pill ───────────────────────────────── */}
             <motion.div
               layout
-              animate={{ borderRadius: walletOpen ? 24 : 999 }}
               transition={{ type: "spring", stiffness: 420, damping: 36, mass: 0.8 }}
               style={{
                 flex: 1,
                 overflow: "hidden",
+                borderRadius:         999,
                 background:           "rgba(255,255,255,0.88)",
                 backdropFilter:       "blur(20px)",
                 WebkitBackdropFilter: "blur(20px)",
@@ -248,16 +251,18 @@ export function AppBottomNav() {
                   padding: PAD,
                 }}
               >
-                {/* Sliding highlight */}
+                {/* Sliding highlight — precise: each tab = (100% - 2*PAD) / 4 */}
                 <motion.span
                   className="absolute rounded-full"
                   animate={{
-                    left:    activeIndex >= 0 ? `calc(${PAD}px + ${activeIndex} * 25%)` : PAD,
+                    left:    activeIndex >= 0
+                      ? `calc(${PAD}px + ${activeIndex} * (100% - ${PAD * 2}px) / 4)`
+                      : PAD,
                     opacity: activeIndex >= 0 ? 1 : 0,
                   }}
                   transition={{ type: "spring", stiffness: 500, damping: 38, mass: 0.7 }}
                   style={{
-                    width:         "calc(25%)",
+                    width:         `calc((100% - ${PAD * 2}px) / 4)`,
                     height:        PILL_H - PAD * 2,
                     top:           PAD,
                     background:    "rgba(0,0,0,0.07)",
