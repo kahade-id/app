@@ -57,6 +57,13 @@ export function AppBottomNav() {
 
   const [isDesktop, setIsDesktop] = useState(false)
   const [walletOpen, setWalletOpen] = useState(false)
+  const [isRounded, setIsRounded] = useState(true) // tracks borderRadius separately from walletOpen
+
+  // When wallet opens → immediately square corners
+  // When wallet closes → keep square until layout animation finishes
+  useEffect(() => {
+    if (walletOpen) setIsRounded(false)
+  }, [walletOpen])
 
   // Only fetch wallet when panel is open
   const { data: wallet } = useWallet()
@@ -135,11 +142,14 @@ export function AppBottomNav() {
             {/* ── Expandable Pill ───────────────────────────────── */}
             <motion.div
               layout
+              onLayoutAnimationComplete={() => {
+                if (!walletOpen) setIsRounded(true)
+              }}
               transition={{ type: "spring", stiffness: 420, damping: 36, mass: 0.8 }}
               style={{
                 flex: 1,
                 overflow: "hidden",
-                borderRadius:         walletOpen ? 24 : 999,
+                borderRadius:         isRounded ? 999 : 24,
                 background:           "rgba(255,255,255,0.88)",
                 backdropFilter:       "blur(20px)",
                 WebkitBackdropFilter: "blur(20px)",
