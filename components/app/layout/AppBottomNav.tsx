@@ -145,7 +145,7 @@ export function AppBottomNav() {
               onLayoutAnimationComplete={() => {
                 if (!walletOpen) setIsRounded(true)
               }}
-              transition={{ type: "spring", stiffness: 420, damping: 36, mass: 0.8 }}
+              transition={{ type: "spring", stiffness: 420, damping: 36, mass: 0.8, delay: walletOpen ? 0 : 0.08 }}
               style={{
                 flex: 1,
                 overflow: "hidden",
@@ -166,10 +166,10 @@ export function AppBottomNav() {
                 {walletOpen && (
                   <motion.div
                     key="wallet-content"
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: -12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 6 }}
-                    transition={{ type: "spring", stiffness: 480, damping: 38, delay: 0.04 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    transition={{ type: "spring", stiffness: 480, damping: 38, delay: walletOpen ? 0.04 : 0 }}
                     style={{ padding: "18px 18px 14px" }}
                   >
                     {/* Balance */}
