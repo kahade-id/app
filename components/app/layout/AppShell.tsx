@@ -31,7 +31,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* M-8 FIX: Removed redundant role="main" — <main> already has the implicit
             ARIA landmark role "main". Adding it explicitly is redundant and can confuse
             some screen readers by doubling the landmark announcement. */}
-        <main id="main-content" className="flex-1 p-4 lg:p-6 pb-20 lg:pb-6 space-y-6">
+        <main id="main-content" className="flex-1 p-4 lg:p-6 pb-28 lg:pb-6 space-y-6">
           <KycBanner />
           {children}
         </main>
