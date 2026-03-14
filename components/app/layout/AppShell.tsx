@@ -6,14 +6,18 @@ import { AppTopbar } from "./AppTopbar"
 import { AppBottomNav } from "./AppBottomNav"
 import { KycBanner } from "../dashboard/KycBanner"
 import { useAuthStore } from "@/lib/stores/auth.store"
+import { RefreshableLayout } from "@/components/pull-to-refresh"
+import { useInterceptKeyboardRefresh } from "@/lib/hooks/use-intercept-keyboard-refresh"
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const refreshActivity = useAuthStore((s) => s.refreshActivity)
 
+  // Phase 2: Intercept F5/Ctrl+R -> soft refresh via TanStack Query
+  useInterceptKeyboardRefresh()
+
   useEffect(() => {
-    // UX-005 FIX: refreshActivity() was defined in auth.store but never called anywhere,
-    // so session timeout was always counted from login time, not last activity.
-    // Attach to click and keydown events at the AppShell level to update last-active timestamp.
+    // UX-005 FIX: Attach activity listeners supaya session timeout
+    // dihitung dari last activity, bukan login time.
     const handleActivity = () => refreshActivity()
     window.addEventListener("click", handleActivity, { passive: true })
     window.addEventListener("keydown", handleActivity, { passive: true })
@@ -24,17 +28,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [refreshActivity])
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-dvh overflow-hidden">
       <AppSidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <AppTopbar />
-        {/* M-8 FIX: Removed redundant role="main" — <main> already has the implicit
-            ARIA landmark role "main". Adding it explicitly is redundant and can confuse
-            some screen readers by doubling the landmark announcement. */}
-        <main id="main-content" className="flex-1 p-4 lg:p-6 pb-28 lg:pb-6 space-y-6">
-          <KycBanner />
-          {children}
-        </main>
+        {/* RefreshableLayout: pull-to-refresh mobile + overscroll-contain */}
+        <RefreshableLayout className="flex-1 overflow-y-auto overscroll-y-contain">
+          <main
+            id="main-content"
+            className="p-4 lg:p-6 pb-28 lg:pb-6 space-y-6"
+          >
+            <KycBanner />
+            {children}
+          </main>
+        </RefreshableLayout>
       </div>
       <AppBottomNav />
     </div>
